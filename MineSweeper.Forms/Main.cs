@@ -7,14 +7,14 @@ namespace MineSweeper.Forms
 {
     public partial class Main : Form
     {
-        private int _bomb = 99;
-        private Manager _game;
         private const int StartHeight = 50;
+        private int _bomb = 99;
+        private TimeSpan _currentElapsedTime = TimeSpan.Zero;
+        private Manager _game;
+        private DateTime _startTime;
+        private TimeSpan _totalElapsedTime = TimeSpan.Zero;
         private int _x = 30;
         private int _y = 16;
-        private DateTime _startTime;
-        private TimeSpan _currentElapsedTime = TimeSpan.Zero;
-        private TimeSpan _totalElapsedTime = TimeSpan.Zero;
 
         public Main()
         {
@@ -33,7 +33,7 @@ namespace MineSweeper.Forms
             timerGame.Stop();
 
             _game = new Manager(_x, _y, _bomb);
-            
+
             Draw();
 
             DisplayMines();
@@ -42,22 +42,22 @@ namespace MineSweeper.Forms
         private void Draw()
         {
             for (var i = 0; i < _x; i++)
-                for (var j = 0; j < _y; j++)
+            for (var j = 0; j < _y; j++)
+            {
+                var button = new Button
                 {
-                    var button = new Button
-                    {
-                        Width = 20,
-                        Height = 20,
-                        Name = "btn_" + i + "_" + j,
-                        Location = new Point(i*20, j*20)
-                    };
+                    Width = 20,
+                    Height = 20,
+                    Name = "btn_" + i + "_" + j,
+                    Location = new Point(i * 20, j * 20)
+                };
 
-                    button.MouseUp += Button_MouseUp;                    
+                button.MouseUp += Button_MouseUp;
 
-                    pnlMineField.Controls.Add(button);
-                }
+                pnlMineField.Controls.Add(button);
+            }
 
-            var point = new Point(_x*20, _y*20);
+            var point = new Point(_x * 20, _y * 20);
             Width = point.X + 40;
             Height = point.Y + 80 + StartHeight;
 
@@ -67,7 +67,6 @@ namespace MineSweeper.Forms
 
         private void Button_MouseUp(object sender, MouseEventArgs e)
         {
-
             if (_game.Finished() || _game.MineExploded())
                 return;
 
@@ -78,15 +77,15 @@ namespace MineSweeper.Forms
                 _totalElapsedTime = _currentElapsedTime;
 
                 timerGame.Start();
-            }        
-                
-            
+            }
+
 
             var button = (Button) sender;
+            var name = button.Name.Split('_');
             var point = new Point
             {
-                X = int.Parse(button.Name.Split('_')[1]),
-                Y = int.Parse(button.Name.Split('_')[2])
+                X = int.Parse(name[1]),
+                Y = int.Parse(name[2])
             };
 
             switch (e.Button)
@@ -102,18 +101,19 @@ namespace MineSweeper.Forms
             if (_game.Finished())
             {
                 timerGame.Stop();
-                MessageBox.Show("YOU WON!");                
+                MessageBox.Show("YOU WON!");
             }
 
             if (_game.MineExploded())
             {
                 timerGame.Stop();
                 MessageBox.Show("Game Over");
-                ReDraw(true);                
+                ReDraw(true);
             }
             else
+            {
                 ReDraw();
-                            
+            }
         }
 
         private void ReDraw(bool showMines = false)
@@ -124,17 +124,16 @@ namespace MineSweeper.Forms
                     continue;
 
                 var button = (Button) control;
-
+                var name = button.Name.Split('_');
                 var point = new Point
                 {
-                    X = int.Parse(button.Name.Split('_')[1]),
-                    Y = int.Parse(button.Name.Split('_')[2])
+                    X = int.Parse(name[1]),
+                    Y = int.Parse(name[2])
                 };
 
-                var field = _game.MineFields.First(f => (f.X == point.X) && (f.Y == point.Y));
+                var field = _game.MineFields.First(f => f.X == point.X && f.Y == point.Y);
 
-
-                if (field.IsOpenField && (field.BombsNearMe > 0))
+                if (field.IsOpenField && field.BombsNearMe > 0)
                 {
                     button.TabStop = false;
                     button.FlatStyle = FlatStyle.Flat;
@@ -166,34 +165,41 @@ namespace MineSweeper.Forms
                             break;
                     }
                 }
-                else if (field.IsOpenField && (field.BombsNearMe == 0))
+                else if (field.IsOpenField && field.BombsNearMe == 0)
+                {
                     button.Visible = false;
-                else if (field.HasFlag)                    
-                    button.Text = "!";                
+                }
+                else if (field.HasFlag)
+                {
+                    button.Text = "!";
+                }
                 else if (field.HasBomb && field.IsOpenField)
                 {
                     button.BackColor = Color.Red;
                     button.ForeColor = Color.Black;
                     button.Text = "X";
                 }
-                else if(showMines && field.HasBomb)
+                else if (showMines && field.HasBomb)
+                {
                     button.Text = "X";
+                }
                 else
+                {
                     button.Text = "";
+                }
             }
 
             DisplayMines();
-           
         }
-       
+
         private void DisplayMines()
         {
-            toolStripLabelMines.Text = "Mines: " + _game.BombsLeft().ToString();
+            toolStripLabelMines.Text = "Mines: " + _game.BombsLeft();
         }
 
         private void ClearBoard()
         {
-            pnlMineField.Controls.Clear();            
+            pnlMineField.Controls.Clear();
         }
 
         private void expertToolStripMenuItem_Click(object sender, EventArgs e)
@@ -221,14 +227,14 @@ namespace MineSweeper.Forms
         }
 
         private void timerGame_Tick(object sender, EventArgs e)
-        {            
+        {
             var timeSinceStartTime = DateTime.Now - _startTime;
-            timeSinceStartTime = new TimeSpan(timeSinceStartTime.Hours, timeSinceStartTime.Minutes, timeSinceStartTime.Seconds);
-            
+            timeSinceStartTime = new TimeSpan(timeSinceStartTime.Hours, timeSinceStartTime.Minutes,
+                timeSinceStartTime.Seconds);
+
             _currentElapsedTime = timeSinceStartTime + _totalElapsedTime;
-            
+
             toolStripLabelTime.Text = "Time: " + _currentElapsedTime;
-            
         }
     }
 }
